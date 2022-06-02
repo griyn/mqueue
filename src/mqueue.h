@@ -1,6 +1,6 @@
 #pragma once
 
-#include <queue>
+#include <deque>
 #include <mutex>
 #include <memory>
 #include <vector>
@@ -37,16 +37,28 @@ public:
     bool get_front(DATA* data, Closure* done) {
         for (size_t i = 0; i < _queues.size(); ++i) {
             if (_queues[i].get_front(data)) {
-                done->_run = std::bind(&MQueue<DATA>::pop_front, this, i);
+                done->_run = std::bind(&MQueue<DATA>::pop_front, this, i, 1);
                 return true;
             }
         }
         return false;
     }
+    
+    // 批量get
+    bool get_front_batch(std::vector<DATA>* datas, int size, Closure* done) {
+        for (size_t i = 0; i < _queues.size(); ++i) {
+            if (_queues[i].get_front_batch(datas, &size)) {
+                done->_run = std::bind(&MQueue<DATA>::pop_front, this, i, size);
+                return true;
+            }
+        }
+        return false;
+
+    }
 
     // 删除key对应的data。只能删除队首的数据。
-    bool pop_front(int idx) {
-        return _queues[idx].pop_front();
+    bool pop_front(int idx, int size) {
+        return _queues[idx].pop_front(size);
     }
 
     Closure* new_closure() {
@@ -59,7 +71,7 @@ private:
     public:
         void push_back(const D& data) {
             std::lock_guard<std::mutex> guard(_back_mutex);
-            _queue.push(data);
+            _queue.push_back(data);
         }
         bool get_front(D* data) {
             std::lock_guard<std::mutex> guard(_front_mutex);
@@ -70,18 +82,35 @@ private:
             _has_get = true;
             return true;
         }
-        bool pop_front() {
+        bool pop_front(int size) {
             std::lock_guard<std::mutex> guard(_front_mutex);
             if (_queue.empty()) {
                 return false;
             }
             _has_get = false;
-            _queue.pop();
+            for (int i = 0; i < size; ++i) {
+                _queue.pop_front();
+            }
             return true;
         }
-
+        bool get_front_batch(std::vector<D>* datas, int* size) {
+            std::lock_guard<std::mutex> guard(_front_mutex);
+            if (_has_get || _queue.empty()) {
+                return false;
+            }
+            if (*size == -1 || *size > _queue.size()) {
+                *size = _queue.size();
+            }
+            auto riter = _queue.rbegin();
+            for (int i = 0; i < *size; ++i) {
+                datas->push_back(*riter);
+                riter++;   
+            }
+            _has_get = true;
+            return true;
+        }
     private:
-        std::queue<D> _queue;
+        std::deque<D> _queue;
         std::mutex _back_mutex;
         std::mutex _front_mutex;
         bool _has_get {false};

@@ -27,7 +27,7 @@ void f2() {
 }
 
 void f3() {
-    for (int i : std::vector<int>(30, 0)) {
+    for (int i : std::vector<int>(3, 0)) {
         std::string read;
         auto* done = mqueue.new_closure();
         if (mqueue.get_front(&read, done)) {
@@ -35,6 +35,16 @@ void f3() {
             done->run();
         }
     }
+
+    auto* done = mqueue.new_closure();
+    std::vector<std::string> reads;
+    if (mqueue.get_front_batch(&reads, -1, done)) {
+        for (auto& read : reads) {
+            std::cout << read << std::endl;
+        }
+        done->run();
+    }
+
 }
 
 int main() {
