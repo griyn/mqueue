@@ -70,11 +70,11 @@ private:
     class SafeQueue {
     public:
         void push_back(const D& data) {
-            std::lock_guard<std::mutex> guard(_back_mutex);
+            std::lock_guard<std::mutex> guard(_mutex);
             _queue.push_back(data);
         }
         bool get_front(D* data) {
-            std::lock_guard<std::mutex> guard(_front_mutex);
+            std::lock_guard<std::mutex> guard(_mutex);
             if (_has_get || _queue.empty()) {
                 return false;
             }
@@ -83,7 +83,7 @@ private:
             return true;
         }
         bool pop_front(int size) {
-            std::lock_guard<std::mutex> guard(_front_mutex);
+            std::lock_guard<std::mutex> guard(_mutex);
             if (_queue.empty()) {
                 return false;
             }
@@ -94,7 +94,7 @@ private:
             return true;
         }
         bool get_front_batch(std::vector<D>* datas, int* size) {
-            std::lock_guard<std::mutex> guard(_front_mutex);
+            std::lock_guard<std::mutex> guard(_mutex);
             if (_has_get || _queue.empty()) {
                 return false;
             }
@@ -111,8 +111,7 @@ private:
         }
     private:
         std::deque<D> _queue;
-        std::mutex _back_mutex;
-        std::mutex _front_mutex;
+        std::mutex _mutex;
         bool _has_get {false};
     };
 
