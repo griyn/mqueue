@@ -1,13 +1,46 @@
-# MQueue
-并行队列，相同key按顺序处理 & 保证并发性能。
+# 并行队列
 
-mqueue实例中包含多个队列，依据入队时的key提交到各个队列里，相同的key会存到同一个队里中按顺序处理。
-## Featrue
+## Pistol
+MPSC(Multi-Producer Single-Consumer)执行队列，所有操作无锁且wait-free。
+
+### Feature
+* 可以并发地提交数据，提交操作是wait-free的
+* 严格按提交的顺序处理数据，通过批量读提高吞吐，也可以在业务层做数据merge
+* 业务层不用考虑资源竞争，可以解决一些业务场景下的时序竞态
+* 所有操作无锁
+
+### example
+```c++
+// 初始化
+::garden::Pistol<std::string> pistol(500, std::bind(batch_read, std::placeholders::_1));
+
+// 读
+void batch_read(::garden::Pistol<std::string>::TaskIterator& iter) {
+    for (; !iter.is_end(); ++iter) {
+        std::cout << *iter << " ";
+    }
+    std::cout << std::endl;
+}
+
+// 写
+std::string str = "Hello";
+pistol->post(std::move(str));
+pistol->post("World");
+```
+
+## MQueue
+并行队列，相同key按顺序处理 & 并发性能。
+
+mqueue实例中包含多个micro队列，依据入队时的key提交到各个队列里，相同的key会存到同一个队里中按顺序处理。
+
+TODO: 解决读数据的锁竞争
+
+### Featrue
 * 多个队列锁粒度降低
 * 相同key按顺序取数据
 * 只支持多写一读，可以通过批量读提高并发
 
-## example
+### example
 ```c++
 // 写
 ::garden::MQueue<std::string> mqueue;
