@@ -71,19 +71,19 @@ void Pistol<T>::_work_loop() {
         }
 
         // 获取待执行的node列表
-        NodeBase* snap_end = _END_NODE->prev;
+        NodeBase* snap_back = _END_NODE->prev;
         _END_NODE->prev = nullptr;
         // 和向队列添加node方式相同，但此时不需要链接后面的节点
-        NodeBase* snap_head = _head.exchange(_END_NODE, std::memory_order_release);
-        if (unlikely(snap_head == _END_NODE || snap_end == nullptr)) {
+        NodeBase* snap_front = _head.exchange(_END_NODE, std::memory_order_release);
+        if (unlikely(snap_front == _END_NODE || snap_back == nullptr)) {
             // double check 空队列，队列有数据时快照不应该只有end节点
             throw std::overflow_error("Internal Error in snap empty check");
         }
 
-        TaskIterator iter(snap_head, snap_end);
+        TaskIterator iter(snap_front, snap_back);
         _work_func(iter);
 
-        destory_queue_range(snap_head, snap_end);
+        destory_queue_range(snap_front, snap_back);
     }
 }
 
@@ -145,5 +145,5 @@ T* Pistol<T>::TaskIterator::operator->() const {
 
 template<typename T>
 bool Pistol<T>::TaskIterator::is_end() const {
-    return _head->is_iteratored == true;
+    return _front->is_iteratored == true;
 }

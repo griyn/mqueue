@@ -68,9 +68,9 @@ public:
     // 执行任务时用于遍历用户数据的游标，封装了一些关于内部双向链表的操作
     class TaskIterator {
     public:
-        TaskIterator(NodeBase* head, NodeBase* end) :
-            _head(head), _end(end), 
-            _cur(end) {} // iter创建时保证_cur不为空
+        TaskIterator(NodeBase* front, NodeBase* back) :
+            _front(front), _back(back), 
+            _cur(back) {} // iter创建时保证_cur不为空
 
         TaskIterator& operator++();
         T& operator*() const;
@@ -81,8 +81,8 @@ public:
 
     private:
         // 创建时的queue快照, 包括非END_NODE节点
-        NodeBase* _head;
-        NodeBase* _end;
+        NodeBase* _front;
+        NodeBase* _back;
         // 当前游标，从后往前遍历
         NodeBase* _cur;
     };
