@@ -16,7 +16,7 @@ void write(::garden::Pistol<std::string>* pistol, const std::string& name, int t
         std::stringstream ss;
         ss << name << ":" << std::to_string(i);
         std::string str = ss.str();
-        pistol->post(std::move(str));
+        pistol->push(std::move(str));
     }
 }
 

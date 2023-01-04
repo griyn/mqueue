@@ -35,7 +35,7 @@ public:
     void graceful_stop_and_join(int wait_until_ms);
     
     // 向队列中添加数据，wait-free
-    bool post(T data);
+    bool push(T data);
 
 public:
     // 队列中节点的定义

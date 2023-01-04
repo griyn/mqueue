@@ -43,7 +43,7 @@ void Pistol<T>::graceful_stop_and_join(int wait_until_ms) {
 }
 
 template<typename T>
-bool Pistol<T>::post(T data) {
+bool Pistol<T>::push(T data) {
     if (size() >= capacity() || !started()) {
         return false;
     }
@@ -72,10 +72,16 @@ void Pistol<T>::_work_loop() {
 
         // 获取待执行的node列表
         NodeBase* snap_back = _END_NODE->prev;
+
+        if (snap_back == nullptr) {
+            // 暂时的断链可能会出现 size > 0 但 prev 是空的情况，下次循环再尝试即可
+            continue;
+        }
+
         _END_NODE->prev = nullptr;
         // 和向队列添加node方式相同，但此时不需要链接后面的节点
         NodeBase* snap_front = _head.exchange(_END_NODE, std::memory_order_release);
-        if (unlikely(snap_front == _END_NODE || snap_back == nullptr)) {
+        if (unlikely(snap_front == _END_NODE)) {
             // double check 空队列，队列有数据时快照不应该只有end节点
             throw std::overflow_error("Internal Error in snap empty check");
         }
