@@ -20,9 +20,7 @@ public:
 public:
     Pistol(uint64_t capacity, work_func_t work_func) : 
         _capacity(capacity),
-        _work_func(work_func),
-        _head(new EndNode),
-        _tail(_head) {};
+        _work_func(work_func) {};
 
     // 当前队列大小
     int64_t size();
@@ -43,9 +41,8 @@ public:
     // 队列中节点的定义
     class NodeBase {
     public:
-        NodeBase(bool is) : is_end(is) {}
+        NodeBase() {}
         virtual ~NodeBase() = default;
-        bool is_end;  // 是否是end节点
         bool is_iteratored { false };  // 是否已遍历过
         NodeBase* next { nullptr };
         NodeBase* prev { nullptr };
@@ -53,12 +50,12 @@ public:
 
     class EndNode : public NodeBase {
     public:
-        EndNode() : NodeBase(true) {};
+        EndNode() : NodeBase() {};
     };
 
     class TaskNode : public NodeBase {
     public:
-        TaskNode(T&& d) : data(std::move(d)), NodeBase(false) {
+        TaskNode(T&& d) : data(std::move(d)) {
             s_size.fetch_add(1, std::memory_order_release);
         }
         ~TaskNode() {
@@ -71,9 +68,9 @@ public:
     // 执行任务时用于遍历用户数据的游标，封装了一些关于内部双向链表的操作
     class TaskIterator {
     public:
-        TaskIterator(NodeBase* head, NodeBase* tail) :
-            _head(head), _tail(tail), 
-            _cur(tail->prev) {} // iter创建时保证_cur不为空
+        TaskIterator(NodeBase* head, NodeBase* end) :
+            _head(head), _end(end), 
+            _cur(end) {} // iter创建时保证_cur不为空
 
         TaskIterator& operator++();
         T& operator*() const;
@@ -83,9 +80,9 @@ public:
         bool is_end() const;
 
     private:
-        // 创建时的queue快照
+        // 创建时的queue快照, 包括非END_NODE节点
         NodeBase* _head;
-        NodeBase* _tail;
+        NodeBase* _end;
         // 当前游标，从后往前遍历
         NodeBase* _cur;
     };
@@ -97,11 +94,13 @@ private:
     void destory_queue_range(NodeBase* head, NodeBase* tail);
 
 private:
+    NodeBase* _END_NODE { new EndNode };
+
     // 双向链表的头尾指针，初始化时会有一个end空节点，范围[_head, _tail)左闭右开
     // _head原子变量用于无锁地向队列顺序添加数据
-    std::atomic<NodeBase*> _head;
+    std::atomic<NodeBase*> _head { _END_NODE };
     // _tail用于从队列顺序取数据，只有单消费线程会访问，可以使用普通类型
-    NodeBase* _tail;
+    NodeBase* _tail { _head };
 
     // 工作线程，实例启动立即开始工作
     std::thread _worker {&Pistol::_work_loop, this};

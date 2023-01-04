@@ -60,7 +60,7 @@ bool Pistol<T>::post(T data) {
 
 template<typename T>
 void Pistol<T>::_work_loop() {
-    while (true) { int c;
+    while (true) {
         while (size() <= 0 && started()) {
             // 此时是空队列，不数据处理
             std::this_thread::yield();
@@ -70,19 +70,20 @@ void Pistol<T>::_work_loop() {
             break;
         }
 
-        EndNode* node = new EndNode;
-        NodeBase* snap_head = _head.exchange(node, std::memory_order_release);
-        NodeBase* snap_tail = _tail;
-        _tail = node; // _tail 单线程修改
-        if (snap_head == snap_tail || snap_head->is_end == true) {
+        // 获取待执行的node列表
+        NodeBase* snap_end = _END_NODE->prev;
+        _END_NODE->prev = nullptr;
+        // 和向队列添加node方式相同，但此时不需要链接后面的节点
+        NodeBase* snap_head = _head.exchange(_END_NODE, std::memory_order_release);
+        if (unlikely(snap_head == _END_NODE || snap_end == nullptr)) {
             // double check 空队列，队列有数据时快照不应该只有end节点
             throw std::overflow_error("Internal Error in snap empty check");
         }
 
-        TaskIterator iter(snap_head, snap_tail);
+        TaskIterator iter(snap_head, snap_end);
         _work_func(iter);
 
-        destory_queue_range(snap_head, snap_tail);
+        destory_queue_range(snap_head, snap_end);
     }
 }
 
@@ -99,6 +100,7 @@ void Pistol<T>::destory_queue_range(NodeBase* head, NodeBase* tail) {
                 throw std::overflow_error("Internal Error in destory node nullptr check");
             } else {
                 // 可能是主动销毁节点时有断链的情况
+                // 这种情况只可能发生在未消费即销毁的节点，比如队列强行退出时
                 std::this_thread::yield();
             }
         }
@@ -117,6 +119,7 @@ typename Pistol<T>::TaskIterator& Pistol<T>::TaskIterator::operator++() {
 
     if (!is_end()) {
         while (_cur->prev == nullptr && !is_end()) {
+            // 等待断链接上，但通常不会走到此分支
             std::this_thread::yield();
         }
         _cur = _cur->prev;
