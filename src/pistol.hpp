@@ -1,3 +1,5 @@
+#pragma once
+
 #include "pistol.h"
 
 #ifndef likely
@@ -7,6 +9,8 @@
 #ifndef unlikely
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #endif // unlikely
+
+namespace garden {
 
 template<typename T>
 int64_t Pistol<T>::size() {
@@ -153,3 +157,5 @@ template<typename T>
 bool Pistol<T>::TaskIterator::is_end() const {
     return _front->is_iteratored == true;
 }
+
+} // namespace garden

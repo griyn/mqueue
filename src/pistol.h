@@ -114,6 +114,6 @@ private:
     work_func_t _work_func;
 };
 
-#include "pistol.hpp"
-
 } // namespace garden
+
+#include "pistol.hpp"
