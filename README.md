@@ -53,6 +53,9 @@ std::string ws = "Hello";
 revolver.push(std::move(ws));
 ```
 
+### detail
+doc: [revolver.md](https://github.com/griyn/mqueue/blob/main/docs/revolver.md)
+
 ## MQueue
 并行队列，相同key按顺序处理 & 并发性能。
 
