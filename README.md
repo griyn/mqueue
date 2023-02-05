@@ -25,12 +25,33 @@ void batch_read(::garden::Pistol<std::string>::TaskIterator& iter) {
 
 // 写
 std::string str = "Hello";
-pistol->post(std::move(str));
-pistol->post("World");
+pistol.post(std::move(str));
+pistol.post("World");
 ```
 
 ### detail
 doc: [pistol.md](https://github.com/griyn/mqueue/blob/main/docs/pistol.md)
+
+## Revolver
+MPMC(Multi-Producer Multi-Consumer)数据队列，所有操作无锁且wait-free，基于ringbuffer。
+
+### feature
+* 支持多线程并发地读写队列数据
+* 所有操作无锁且wait-free，对队列的操作不会导致阻塞
+* 多线程下的读写不保证顺序
+
+### example
+```
+::garden::Revolver<std::string> revolver(500);
+
+// 读
+std::string data;
+revolver.pop(&data);
+
+// 写
+std::string ws = "Hello";
+revolver.push(std::move(ws));
+```
 
 ## MQueue
 并行队列，相同key按顺序处理 & 并发性能。
