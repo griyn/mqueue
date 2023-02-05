@@ -3,7 +3,7 @@
 ## Pistol
 MPSC(Multi-Producer Single-Consumer)执行队列，所有操作无锁且wait-free。
 
-### Feature
+### feature
 * 可以多个线程并发地提交数据
 * 异步有序执行已提交的数据，严格按提交的顺序处理数据；通过批量读提高吞吐，用户也可以在业务层做数据merge
 * 业务层不用考虑资源竞争，可以解决一些业务场景下的时序竞态
@@ -29,6 +29,9 @@ pistol->post(std::move(str));
 pistol->post("World");
 ```
 
+### detail
+doc: [pistol.md](https://github.com/griyn/mqueue/blob/main/docs/pistol.md)
+
 ## MQueue
 并行队列，相同key按顺序处理 & 并发性能。
 
@@ -36,7 +39,7 @@ mqueue实例中包含多个micro队列，依据入队时的key提交到各个队
 
 TODO: 解决读数据的锁竞争
 
-### Featrue
+### featrue
 * 多个队列锁粒度降低
 * 相同key按顺序取数据
 * 只支持多写一读，可以通过批量读提高并发
